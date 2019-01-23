@@ -4,7 +4,7 @@ const filterProps = require('../services/utils.js').filterProps;
 const db = require('../models').db;
 
 class RecipesController {
-  constructor (recipeModel) {
+  constructor(recipeModel) {
     if (!recipeModel) throw new Error('Recipe model not provided');
     this.Recipe = recipeModel;
     this.addRecipesToDB = this.addRecipesToDB.bind(this);
@@ -16,12 +16,12 @@ class RecipesController {
     this.deleteUsersRecipeById = this.deleteUsersRecipeById.bind(this);
   }
 
-  async addRecipesToDB (ctx, next) {
+  async addRecipesToDB(ctx, next) {
     if (ctx.method !== 'POST') throw new Error('Method not allowed');
     const recipeCollection = Array.isArray(ctx.request.body)
       ? ctx.request.body
       : ctx.request.body.recipes;
-    const userID = '768d3697-6b8f-4377-b8a3-e17936c7bc43'; // ctx.user.id
+    const userID = ctx.user.id; //'0eb27b79-4867-414d-9069-9987972ef08f'; // ctx.user.id
 
     recipeCollection.forEach(async recipe => {
       await this.Recipe.create({
@@ -30,30 +30,37 @@ class RecipesController {
         serves: recipe.servings,
         photo: recipe.image,
         user_id: userID,
-        recipe_json_details: recipe,
+        recipe_json_details: recipe
       });
     });
 
     ctx.body = 'recipes';
   }
 
-  async getRecipesFromDB (ctx, next) {
+  async getRecipesFromDB(ctx, next) {
     if (ctx.method !== 'GET') throw new Error('Method not allowed');
-   
+
     // Find all recipes from the user
-    const user_id = '768d3697-6b8f-4377-b8a3-e17936c7bc43'; //ctx.user.id;
+    const user_id = ctx.user.id; // '0eb27b79-4867-414d-9069-9987972ef08f'; //ctx.user.id;
     const recipes = await this.Recipe.findAll({
       where: {
-        user_id,
+        user_id
       },
-      attributes: ['id', 'title', 'instructions', 'serves', 'photo', 'recipe_json_details'],
+      attributes: [
+        'id',
+        'title',
+        'instructions',
+        'serves',
+        'photo',
+        'recipe_json_details'
+      ]
     });
 
     console.log(recipes);
     ctx.body = recipes;
   }
 
-  async createUsersRecipe (ctx, next) {
+  async createUsersRecipe(ctx, next) {
     console.log('in createUsersRecipe');
     // Check if the method is correct
     if (ctx.method !== 'POST') throw new Error('Method not allowed');
@@ -65,14 +72,14 @@ class RecipesController {
       // Check if there's already a recipe with this title
       let recipe = await this.Recipe.findOne({
         where: {
-          title: data.title,
-        },
+          title: data.title
+        }
       });
       // if there's already a recipe, send an error
       if (recipe) {
         ctx.status = 403;
         ctx.body = {
-          errors: ['Recipe already exists.'],
+          errors: ['Recipe already exists.']
         };
       } else {
         // If there's no recipe with this name, create a new one
@@ -80,7 +87,7 @@ class RecipesController {
           'title',
           'instructions',
           'serves',
-          'photo',
+          'photo'
         ]);
         recipe.user_id = ctx.user.id;
         const newRecipe = await this.Recipe.create(recipe);
@@ -91,24 +98,24 @@ class RecipesController {
           ingredients.map(async ingredient => {
             const recipeIngredient = {
               ...ingredient,
-              recipe_id: newRecipe.dataValues.id,
+              recipe_id: newRecipe.dataValues.id
             };
             await db.Recipe_ingredient.create(recipeIngredient);
-          }),
+          })
         );
 
         // Find all ingredients for this recipe
         const newIngredients = await db.Recipe_ingredient.findAll({
           where: {
-            recipe_id: newRecipe.dataValues.id,
+            recipe_id: newRecipe.dataValues.id
           },
           attributes: ['id', 'ingredient_id', 'measure_id', 'amount'],
           include: [
             {
               model: db.Measure,
-              attributes: ['name', 'short'],
-            },
-          ],
+              attributes: ['name', 'short']
+            }
+          ]
         });
 
         // Get the name of the measures for each ingredient
@@ -122,7 +129,7 @@ class RecipesController {
           const result = {
             ...el.dataValues,
             measure,
-            short_measure,
+            short_measure
           };
           delete result.Measure;
           delete result.measure_id;
@@ -135,11 +142,11 @@ class RecipesController {
           'title',
           'instructions',
           'serves',
-          'photo',
+          'photo'
         ]);
         const newRecipeWithIngredients = {
           ...res,
-          ingredients: newIngredientsWithMeasure,
+          ingredients: newIngredientsWithMeasure
         };
 
         ctx.body = [newRecipeWithIngredients];
@@ -148,13 +155,13 @@ class RecipesController {
     } else {
       ctx.status = 406;
       ctx.body = {
-        errors: ['Title of the recipe needed'],
+        errors: ['Title of the recipe needed']
       };
       return;
     }
   }
 
-  async getUsersRecipes (ctx, next) {
+  async getUsersRecipes(ctx, next) {
     // Check if the method is correct
     if (ctx.method !== 'GET') throw new Error('Method not allowed');
 
@@ -162,9 +169,9 @@ class RecipesController {
     const user_id = ctx.user.id;
     const recipes = await this.Recipe.findAll({
       where: {
-        user_id,
+        user_id
       },
-      attributes: ['id', 'title', 'instructions', 'serves', 'photo'],
+      attributes: ['id', 'title', 'instructions', 'serves', 'photo']
     });
 
     if (recipes) {
@@ -175,15 +182,15 @@ class RecipesController {
         recipes.map(async recipe => {
           const ingredients = await db.Recipe_ingredient.findAll({
             where: {
-              recipe_id: recipe.dataValues.id,
+              recipe_id: recipe.dataValues.id
             },
             attributes: ['id', 'ingredient_id', 'measure_id', 'amount'],
             include: [
               {
                 model: db.Measure,
-                attributes: ['name', 'short'],
-              },
-            ],
+                attributes: ['name', 'short']
+              }
+            ]
           });
 
           // Get the name of the measures for each ingredient
@@ -197,7 +204,7 @@ class RecipesController {
             const result = {
               ...el.dataValues,
               measure,
-              short_measure,
+              short_measure
             };
             delete result.Measure;
             delete result.measure_id;
@@ -207,10 +214,10 @@ class RecipesController {
           // Put the ingredients inside the recipes
           const recipeWithIngredients = {
             ...recipe.dataValues,
-            ingredients: ingredientsWithMeasure,
+            ingredients: ingredientsWithMeasure
           };
           res.push(recipeWithIngredients);
-        }),
+        })
       );
 
       ctx.body = res;
@@ -221,7 +228,7 @@ class RecipesController {
     ctx.status = 200;
   }
 
-  async getUsersRecipeById (ctx, next) {
+  async getUsersRecipeById(ctx, next) {
     // Check if the method is correct
     if (ctx.method !== 'GET') throw new Error('Method not allowed');
 
@@ -229,24 +236,24 @@ class RecipesController {
     const recipe_id = ctx.params.recipe_id;
     const recipe = await this.Recipe.findOne({
       where: {
-        id: recipe_id,
+        id: recipe_id
       },
-      attributes: ['id', 'title', 'instructions', 'serves', 'photo'],
+      attributes: ['id', 'title', 'instructions', 'serves', 'photo']
     });
 
     if (recipe) {
       // Find all ingredients for this recipe
       const ingredients = await db.Recipe_ingredient.findAll({
         where: {
-          recipe_id,
+          recipe_id
         },
         attributes: ['id', 'ingredient_id', 'measure_id', 'amount'],
         include: [
           {
             model: db.Measure,
-            attributes: ['name', 'short'],
-          },
-        ],
+            attributes: ['name', 'short']
+          }
+        ]
       });
 
       // Get the name of the measures for each ingredient
@@ -260,7 +267,7 @@ class RecipesController {
         const result = {
           ...el.dataValues,
           measure,
-          short_measure,
+          short_measure
         };
         delete result.Measure;
         delete result.measure_id;
@@ -270,7 +277,7 @@ class RecipesController {
       // Put the ingredients inside the recipes
       const recipeWithIngredients = {
         ...recipe.dataValues,
-        ingredients: ingredientsWithMeasure,
+        ingredients: ingredientsWithMeasure
       };
 
       ctx.body = [recipeWithIngredients];
@@ -279,13 +286,13 @@ class RecipesController {
       // Send an error if there's no recipe with this id
       ctx.status = 404;
       ctx.body = {
-        errors: ['Recipe not found.'],
+        errors: ['Recipe not found.']
       };
       return;
     }
   }
 
-  async updateUsersRecipeById (ctx, next) {
+  async updateUsersRecipeById(ctx, next) {
     // Check if the method is correct
     if (ctx.method !== 'PUT') throw new Error('Method not allowed');
 
@@ -297,14 +304,14 @@ class RecipesController {
       'title',
       'instructions',
       'serves',
-      'photo',
+      'photo'
     ]);
     const recipe_id = ctx.params.recipe_id;
     recipe.user_id = ctx.user.id;
     await this.Recipe.update(recipe, {
       where: {
-        id: recipe_id,
-      },
+        id: recipe_id
+      }
     });
 
     // Update recipe_ingredient for each ingredient
@@ -313,42 +320,42 @@ class RecipesController {
       ingredients.map(async ingredient => {
         const recipeIngredient = {
           ...ingredient,
-          recipe_id,
+          recipe_id
         };
         await db.Recipe_ingredient.update(
           {
             amount: ingredient.amount,
-            measure_id: ingredient.measure_id,
+            measure_id: ingredient.measure_id
           },
           {
             where: {
               recipe_id,
-              ingredient_id: ingredient.ingredient_id,
-            },
-          },
+              ingredient_id: ingredient.ingredient_id
+            }
+          }
         );
-      }),
+      })
     );
 
     // Get updated recipe with ingredients
     const updatedRecipe = await this.Recipe.findOne({
       where: {
-        id: recipe_id,
+        id: recipe_id
       },
-      attributes: ['id', 'title', 'instructions', 'serves', 'photo'],
+      attributes: ['id', 'title', 'instructions', 'serves', 'photo']
     });
 
     const updatedIngredients = await db.Recipe_ingredient.findAll({
       where: {
-        recipe_id,
+        recipe_id
       },
       attributes: ['id', 'ingredient_id', 'measure_id', 'amount'],
       include: [
         {
           model: db.Measure,
-          attributes: ['name', 'short'],
-        },
-      ],
+          attributes: ['name', 'short']
+        }
+      ]
     });
 
     // Get the name of the measures for each ingredient
@@ -362,7 +369,7 @@ class RecipesController {
       const result = {
         ...el.dataValues,
         measure,
-        short_measure,
+        short_measure
       };
       delete result.Measure;
       delete result.measure_id;
@@ -372,14 +379,14 @@ class RecipesController {
     // Put the ingredients inside the recipes
     const updatedRecipeWithIngredients = {
       ...updatedRecipe.dataValues,
-      ingredients: updatedIngredientsWithMeasure,
+      ingredients: updatedIngredientsWithMeasure
     };
 
     ctx.body = [updatedRecipeWithIngredients];
     ctx.status = 200;
   }
 
-  async deleteUsersRecipeById (ctx, next) {
+  async deleteUsersRecipeById(ctx, next) {
     // Check if the method is correct
     if (ctx.method !== 'DELETE') throw new Error('Method not allowed');
 
@@ -388,23 +395,23 @@ class RecipesController {
 
     await this.Recipe.destroy({
       where: {
-        id: recipe_id,
-      },
+        id: recipe_id
+      }
     });
 
     // Check if the recipe was deleted correctly
     const recipe = await this.Recipe.findOne({
       where: {
-        id: recipe_id,
+        id: recipe_id
       },
-      attributes: ['id'],
+      attributes: ['id']
     });
 
     if (!recipe) ctx.status = 200;
     else {
       ctx.status = 501;
       ctx.body = {
-        errors: ['An error ocurred. Recipe not deleted'],
+        errors: ['An error ocurred. Recipe not deleted']
       };
       return;
     }

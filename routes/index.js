@@ -19,7 +19,7 @@ const usersController = new UsersController(db.User);
 
 router
   .post('/users', usersController.createUser)
-  .get('/sign-in', usersController.signIn)
+  .get('/sign-in', usersController.signIn);
 
 router
   .use('/me', authMiddleware(db.User), usersRoutes.routes())
@@ -30,7 +30,7 @@ router
     ingredientTypesRoutes.routes(),
   )
   .use('/ingredients', authMiddleware(db.User), ingredientsRoutes.routes())
-  .use('/recipes', /*authMiddleware(db.User),*/ recipesRoutes.routes())
+  .use('/recipes', authMiddleware(db.User), recipesRoutes.routes())
   .use('/plans', authMiddleware(db.User), plansRoutes.routes())
   .use(
     '/shopping-list-items',
