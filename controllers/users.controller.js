@@ -42,6 +42,7 @@ class UsersController {
       } else {
         // If there's no user, create a new one
         user = filterProps(userData, ['email', 'first_name', 'last_name']);
+        console.log("create user ", user );
         user.hash_password = await bcrypt.hash(userData.password, 10);
         let newUser = await this.User.create(user);
         const { hash_password, updated_at, created_at, ...res } = newUser.dataValues;
