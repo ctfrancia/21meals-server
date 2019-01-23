@@ -85,39 +85,45 @@ class UsersController {
   async signIn (ctx, next) {
     // Check if the method is correct
     if (ctx.method !== 'GET') throw new Error('Method not allowed');
+    console.log(ctx.headers);
+
 
     const basic = ctx.headers.authorization.split(' ');
     if (basic.length < 2 && basic[0] !== 'Basic') throw new Error('Missing basic authentication header');
-
     const [ email, password ] = atob(basic[1]).split(':');
-  
+
     const user = await this.User.findOne({
       where: {
         email
       },
       attributes: ['id', 'email', 'first_name', 'last_name', 'hash_password']
     });
-    
+
     if (user) {
       const match = await bcrypt.compare(password, user.dataValues.hash_password);
       if (match) {
         const { hash_password, ...res } = user.dataValues;
+
         // token expires in 30 days
         const token = jwt.sign({
           id: res.id,
         }, process.env.JWT_SECRET, {
           expiresIn: 2592000
         });
+        console.log('TOKEN!!!!', token);
+
         res.token = token;
 
         // get first plan id
-        const firstPlan = await db.Plan.findOne({
-          where: {
-            user_id: res.id
-          },
-          attributes: ['id']
-        });
-        res.plan_id = firstPlan.dataValues.id;
+        // const firstPlan = await db.Plan.findOne({
+        //   where: {
+        //     user_id: res.id
+        //   },
+        //   attributes: ['id']
+        // });
+        // // console.log('FIRST PLAN DATA VALUES',firstPlan.dataValues);
+
+        // res.plan_id = firstPlan.dataValues.id;
 
         ctx.body = res;
         ctx.status = 200;
