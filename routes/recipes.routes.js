@@ -9,6 +9,8 @@ const recipesController = new RecipesController(db.Recipe);
 // Recipe routes
 router
   .post('/', recipesController.createUsersRecipe)
+  .post('/downloadedRecipes', recipesController.addRecipesToDB)
+  .get('/downloadedRecipes', recipesController.getRecipesFromDB)
   .get('/', recipesController.getUsersRecipes)
   .get('/:recipe_id', recipesController.getUsersRecipeById)
   .put('/:recipe_id', recipesController.updateUsersRecipeById)
